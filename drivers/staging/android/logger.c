@@ -26,6 +26,7 @@
 #include "logger.h"
 
 #include <asm/ioctls.h>
+#include <linux/sched.h>
 
 /*
  * struct logger_log - represents a specific log, such as 'main' or 'radio'

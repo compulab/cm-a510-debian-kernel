@@ -29,6 +29,8 @@
 *.lzma
 *.patch
 *.gcno
+arch/arm/boot/compressed/vmlinux.lds
+arch/arm/kernel/vmlinux.lds
 
 #
 # Top-level generic files
@@ -71,6 +73,10 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+# tools
+tools/network/mv_eth_tool
+tools/cesa/mv_cesa_tool
+tools/devmem2/devmem2
 
 *.orig
 *~
