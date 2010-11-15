@@ -19,6 +19,10 @@ endif
 ifneq ("$(CONFIG_SND_SOC_RT5630)","")
 snd-mv88fx-soc-objs                  += mv88fx-rt5630.o
 endif
+ifneq ("$(CONFIG_SND_SOC_TLV320AIC23)","")
+snd-mv88fx-soc-objs                  += mv88fx-tlv320aic23.o
+endif
 ifneq ("$(CONFIG_SND_SOC_CS42L51)","")
 snd-mv88fx-soc-objs                  += mv88fx.o
 endif
+

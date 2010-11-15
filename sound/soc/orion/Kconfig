@@ -28,7 +28,7 @@ config SND_DOVE_SOC_DB_B
 	select SND_PXA2XX_LIB
 	select SND_PXA2XX_SOC_AC97
 	select SND_PXA2XX_SOC_AC97_SURROUND
-	select SND_SOC_AC97_CODEC
+	select SND_SOC_RT655
 	help
 	  Say Y if you want to add support for SoC audio on Marvell
 	  Dove Development Board.
@@ -68,6 +68,11 @@ config CODEC_RT5630
         bool "RT5630 codec"
         depends on SND_DOVE_SOC_MRVL_AUDIO
         select SND_SOC_RT5630
+
+config CODEC_TLV320AIC23
+        bool "TLV320AIC23 codec"
+        depends on SND_DOVE_SOC_MRVL_AUDIO
+	select SND_SOC_TLV320AIC23
 
 endmenu
 endmenu

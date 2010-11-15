@@ -26,7 +26,7 @@
 #include <sound/soc-dapm.h>
 #include <sound/asoundef.h>
 #include <asm/mach-types.h>
-#include "../sound/soc/codecs/cs42l51.h"
+#include "../sound/soc/codecs/tlv320aic23.h"
 #include <linux/mbus.h>
 #include <asm/setup.h>
 #include <asm/mach/arch.h>
@@ -442,42 +442,86 @@ static int mv88fx_snd_ctrl_new(struct snd_card *card)
 }
 
 
-static int mv88fx_cs42l51_init(struct snd_soc_codec *codec)
+
+extern struct snd_soc_dai dit_stub_dai;
+
+static int mv88fx_tlv320aic23_init(struct snd_soc_codec *codec)
 {
 	mv88fx_snd_debug("");
 
-#ifdef CONFIG_MACH_DOVE_RD_AVNG
 	/* Default Gain */
-	snd_soc_update_bits(codec, CS42L51_REG_DAC_OUTPUT_CTRL, 0xE0, 0xE0);
-
-#endif
-
 	mv88fx_snd_ctrl_new(codec->card);
 
 	return 0;
 }
 
-extern struct snd_soc_dai dit_stub_dai;
+static int tlv320aic23_hw_params(struct snd_pcm_substream *substream,
+	struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
+	int ret;
+	unsigned int clk = 0;
+
+	/* Set codec DAI configuration */
+	ret = snd_soc_dai_set_fmt(codec_dai,
+				  SND_SOC_DAIFMT_I2S |
+				  SND_SOC_DAIFMT_NB_NF |
+				  SND_SOC_DAIFMT_CBS_CFS);
+	if (ret < 0) {
+		printk(KERN_ERR "can't set codec DAI configuration\n");
+		return ret;
+	}
+
+
+	switch (params_rate(params)) {
+	case 44100:
+		clk = 11289600;
+		break;
+	case 48000:
+		clk = 12288000;
+		break;
+	case 96000:
+		clk = 24576000;
+		break;
+	}
+	/* Set the codec system clock for DAC and ADC */
+        ret = snd_soc_dai_set_sysclk(codec_dai, 0,
+				 clk, SND_SOC_CLOCK_IN);
+	if (ret < 0) {
+		printk(KERN_ERR "can't set codec MCLK\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static struct snd_soc_ops tlv320aic23_ops = {
+	.hw_params = tlv320aic23_hw_params,
+};
 
 static struct snd_soc_dai_link mv88fx_dai0[] = {
 	{
-	 .name = "CS42L51",
-	 .stream_name = "CS42L51",
+	 .name = "TLV320AIC23",
+	 .stream_name = "TLV320AIC23",
 	 .cpu_dai = &mv88fx_i2s_dai0,
-	 .codec_dai = &cs42l51_dai,
-	 .init = mv88fx_cs42l51_init,
+	 .codec_dai = &tlv320aic23_dai,
+	 .init = mv88fx_tlv320aic23_init,
+	 .ops = &tlv320aic23_ops,
 	 },
 };
 
 static struct snd_soc_dai_link mv88fx_dai1[] = {
 	{
-	 .name = "CS42L51",
-	 .stream_name = "CS42L51",
+	 .name = "TLV320AIC23",
+	 .stream_name = "TLV320AIC23",
 	 .cpu_dai = &mv88fx_i2s_dai1,
-	 .codec_dai = &cs42l51_dai,
-	 .init = mv88fx_cs42l51_init,
+	 .codec_dai = &tlv320aic23_dai,
+	 .init = mv88fx_tlv320aic23_init,
+	 .ops = &tlv320aic23_ops,
 	 },
 };
+
 
 
 static int mv88fx_probe(struct platform_device *pdev)
@@ -500,14 +544,9 @@ static struct snd_soc_card dove = {
 	.num_links = ARRAY_SIZE(mv88fx_dai0),
 };
 
-struct cs42l51_setup_data mv88fx_codec_setup_data = {
-	.i2c_address = 0x4A,
-};
-
 static struct snd_soc_device mv88fx_snd_devdata = {
 	.card = &dove,
-	.codec_dev = &soc_codec_dev_cs42l51,
-	.codec_data = &mv88fx_codec_setup_data,
+	.codec_dev = &soc_codec_dev_tlv320aic23,
 };
 
 static struct snd_soc_card dove1 = {
@@ -522,9 +561,9 @@ static struct snd_soc_card dove1 = {
 
 static struct snd_soc_device mv88fx_snd_devdata1 = {
 	.card = &dove1,
-	.codec_dev = &soc_codec_dev_cs42l51,
-	.codec_data = &mv88fx_codec_setup_data,
+	.codec_dev = &soc_codec_dev_tlv320aic23,
 };
+
 
 static int mv88fx_initalize_machine_data(struct platform_device *pdev)
 {
