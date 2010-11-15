@@ -806,7 +806,7 @@ mv64xxx_i2c_exit(void)
 	platform_driver_unregister(&mv64xxx_i2c_driver);
 }
 
-module_init(mv64xxx_i2c_init);
+subsys_initcall(mv64xxx_i2c_init);
 module_exit(mv64xxx_i2c_exit);
 
 MODULE_AUTHOR("Mark A. Greer <mgreer@mvista.com>");
