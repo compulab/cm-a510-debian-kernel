@@ -200,7 +200,7 @@ MV_NFC_FLASH_INFO flashDeviceInfo[] = {
 		.pgSz = 2048,	/* Page size */
 		.oobSz = 64,	/* Spare size */ 
 		.blkNum = 2048,	/* Number of blocks/sectors in the flash */
-		.id = 0xD320,	/* Device ID 0xDevice,Vendor */
+		.id = 0xDCEC,	/* Device ID 0xDevice,Vendor */
 		.model = "ST 8Gb 8bit",
 		.bb_page = 63,	/* Manufacturer Bad block marking page in block */
 	}, 

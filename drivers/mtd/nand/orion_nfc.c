@@ -353,7 +353,7 @@ static struct pxa3xx_nand_flash st8GbX8 = {
 	.page_size	= 2048,
 	.flash_width	= 8,
 	.num_blocks	= 2048,
-	.chip_id	= 0xD320,
+	.chip_id	= 0xDCEC,
 };
 
 static struct pxa3xx_nand_flash *builtin_flash_types[] = {
@@ -1044,6 +1044,8 @@ static int pxa3xx_nand_detect_flash(struct pxa3xx_nand_info *info)
 
 		if (__readid(info, &id))
 			continue;
+
+		pr_info("NAND id =0x%x(expected id =0x%x)",id,f->chip_id);
 
 		if (id == f->chip_id)
 			return 0;

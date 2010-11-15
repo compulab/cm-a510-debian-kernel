@@ -1456,7 +1456,7 @@ static int orion_nfc_probe(struct platform_device *pdev)
 	info->tclk = pdata->tclk;
 
 	/* Get the TCLK */
-        info->clk = clk_get_sys("dove-nand", NULL);
+        info->clk = clk_get_sys("orion-nfc", NULL);
         if (IS_ERR(info->clk)) {
 		dev_err(&pdev->dev, "failed to get nand clock\n");
 		ret = PTR_ERR(info->clk);
