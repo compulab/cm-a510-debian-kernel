@@ -89,6 +89,14 @@ config MACH_DOVE_VIDEOPLUG
 	  Say 'Y' here if you want your kernel to support the
 	  Marvell  88AP510 Video Plug Board.
 
+config MACH_CM_A510
+       bool "CompuLab CM-A510 Board"
+       select I2C_BOARDINFO
+       depends on DOVE_REV_Y0
+       help
+	  Say 'Y' here if you want your kernel to support the
+	  CompuLab CM-A510 Board.
+
 endmenu
 
 config MV_HAL_DRIVERS_SUPPORT

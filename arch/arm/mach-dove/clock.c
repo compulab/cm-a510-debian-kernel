@@ -1011,7 +1011,7 @@ static struct clk_lookup dove_clocks[] = {
 	INIT_CK(NULL, "PCI1", &clk_pcie1),
 	INIT_CK("sdhci-mv.0", NULL, &clk_sdio0),
 	INIT_CK("sdhci-mv.1", NULL, &clk_sdio1),
-	INIT_CK("dove-nand", NULL, &clk_nand),
+	INIT_CK("orion-nfc", NULL, &clk_nand),
 	INIT_CK("cafe1000-ccic.0", NULL, &clk_camera),
 	INIT_CK("mv88fx_snd.0", NULL, &clk_i2s0),
 	INIT_CK("mv88fx_snd.1", NULL, &clk_i2s1),
