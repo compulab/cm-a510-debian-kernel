@@ -405,14 +405,12 @@ static int __init cm_a510_lateinit(void)
 			gpio_set_value(SB_A510_DVI_PD_GPIO, 1);
 		}
 	}
-/*
+
 	ret = gpio_request(SB_A510_PCI_RST_GPIO,"SB-A510 PCI RST");
 	if (ret == 0) {
 		gpio_direction_output(SB_A510_PCI_RST_GPIO, 1);
 		gpio_set_value(SB_A510_PCI_RST_GPIO, 1);
        	}
-*/
-
 
         ret = gpio_request(SB_A510_MMC_PWEN,"SB-A510 MMC Power Enable");
         if (ret == 0) {
