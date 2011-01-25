@@ -1,0 +1,164 @@
+#!/bin/sh
+
+# Global settings
+#set -x
+
+TMP_FOLDER=/tmp
+
+RELEASE_REPOSITORY=10.1.1.95
+RELEASE_REPOSITORY_USER=ftp
+RELEASE_REPOSITORY_PASSWORD=anonymous
+CURRENT_PRODUCT_PATH=releases/cm-a510/Linux
+CURRENT_PRODUCT_NAME=a510-linux-current.zip
+RELEASE_PRODUCT_NAME=a510-linux-release.zip
+RELEASE_PRODUCT_PATH=incoming/CM-A510/Linux
+
+BUILD_TMP=/home/kostya/bin-tmp
+SOURCE_REPOSITORY_PATH=/home/kostya/git-repo
+KERNEL_REPOSITORY_NAME=linux-dove-2.6.32
+
+WIFI_REPOSITORY_NAME=system-broadcom-wlan
+WIFI_LOCAL_PATH=bcm4329/src/dhd/linux
+WIFI_RELEASE_TAG=bcm4319-cm-a510.v1.0
+
+KERNEL_RELEASE_TAG=cm-a510.v1.01
+KERNEL_BASE_TAG=v2.6.32.9
+RELEASE_PRODUCT_VERSION=`echo $KERNEL_RELEASE_TAG | cut -f2- -d.`
+
+PACKAGE_PATH=$TMP_FOLDER/a510-linux
+PACKAGE_KERNEL_DIR_UIMAGE=/kernel/uImage-2.6.32.9-cm-a510.bin
+PACKAGE_KERNEL_DIR_PATCH=/kernel/linux-2.6.32.9-cm-a510.patch
+PACKAGE_KERNEL_DIR_CONFIG=/kernel/linux-2.6.32.9-cm-a510.config
+PACKAGE_IMAGE_DIR_UIMAGE=/images/kernel.img
+PACKAGE_IMAGE_DIR_FS_TAR=/images/debian-image.tar.bz2
+PACKAGE_IMAGE_DIR_FS_UBI=/images/debian-image.ubi
+PACKAGE_UTIL_DIR_UBI_CONFIG=/utilities/debian-image.cfg
+
+UBIFS_IMAGE_FILE=debian-image.ubifs
+FILE_SYSTEM_TMP_DIR=$TMP_FOLDER/cm-a510-rootfs
+
+INITIAL_DIR=`pwd`
+# Download current release
+rm -rf $TMP_FOLDER/$CURRENT_PRODUCT_NAME
+ftp -inv $RELEASE_REPOSITORY<<ENDFTP
+user $RELEASE_REPOSITORY_USER $RELEASE_REPOSITORY_PASSWORD
+cd $CURRENT_PRODUCT_PATH
+bin
+lcd $TMP_FOLDER
+get $CURRENT_PRODUCT_NAME
+bye
+ENDFTP
+
+# Extract product package
+rm -rf $PACKAGE_PATH 
+unzip -d $PACKAGE_PATH /tmp/$CURRENT_PRODUCT_NAME
+
+# Extract file system
+sudo rm -rf $FILE_SYSTEM_TMP_DIR
+sudo mkdir $FILE_SYSTEM_TMP_DIR
+sudo tar -C $FILE_SYSTEM_TMP_DIR -xjvf $PACKAGE_PATH/$PACKAGE_IMAGE_DIR_FS_TAR
+
+# Fix legacy release error 
+if [ -d "$FILE_SYSTEM_TMP_DIR/tmp/debian" ]; then
+    sudo mv $FILE_SYSTEM_TMP_DIR/tmp $FILE_SYSTEM_TMP_DIR/tmp_legacy
+    sudo mv $FILE_SYSTEM_TMP_DIR/tmp_legacy/debian/* $FILE_SYSTEM_TMP_DIR/
+    sudo rm -rf $FILE_SYSTEM_TMP_DIR/tmp_legacy
+fi
+
+# Prepare kernel tree
+cd $SOURCE_REPOSITORY_PATH/$KERNEL_REPOSITORY_NAME
+stash_clean=`git stash | grep -c "No local changes to save"`
+
+# Prepare patch
+git checkout $KERNEL_RELEASE_TAG
+rm -rf $KERNEL_PATCH_NAME
+git diff $KERNEL_BASE_TAG $KERNEL_RELEASE_TAG > $PACKAGE_PATH/$PACKAGE_KERNEL_DIR_PATCH
+cp -av arch/arm/config/cm_a510_defconfig $PACKAGE_PATH/$PACKAGE_KERNEL_DIR_CONFIG
+
+# Compile Kernel
+# 1. Prepare environment
+rm -rf $BUILD_TMP/$KERNEL_RELEASE_TAG
+mkdir $BUILD_TMP/$KERNEL_RELEASE_TAG
+export ARCH=arm
+export CROSS_COMPILE=arm-none-linux-gnueabi-
+# 2. Build Kernel
+make O=$BUILD_TMP/$KERNEL_RELEASE_TAG cm_a510_defconfig
+make O=$BUILD_TMP/$KERNEL_RELEASE_TAG -j16 uImage
+# 2.1 Copy kernel to the package
+sudo cp -av $BUILD_TMP/$KERNEL_RELEASE_TAG/arch/arm/boot/uImage $PACKAGE_PATH/$PACKAGE_KERNEL_DIR_UIMAGE
+sudo cp -av $BUILD_TMP/$KERNEL_RELEASE_TAG/arch/arm/boot/uImage $PACKAGE_PATH/$PACKAGE_IMAGE_DIR_UIMAGE
+
+#Compile Modules
+# 1. Build Modules
+make O=$BUILD_TMP/$KERNEL_RELEASE_TAG -j16 modules
+# 2. Install modules
+sudo INSTALL_MOD_PATH=$FILE_SYSTEM_TMP_DIR/ ARCH=arm make O=$BUILD_TMP/$KERNEL_RELEASE_TAG -j16 modules_install
+
+#Restore kernel tree
+if [ "$stash_clean" = "0" ] ; then	    
+  git stash pop
+fi
+
+#Prepare External tree
+cd $SOURCE_REPOSITORY_PATH/$WIFI_REPOSITORY_NAME
+stash_clean=`git stash | grep -c "No local changes to save"`
+git checkout $WIFI_RELEASE_TAG
+sudo mkdir -p $FILE_SYSTEM_TMP_DIR/lib/firmware/bcm4319/
+sudo cp -av firmware/bcm4319/files/* $FILE_SYSTEM_TMP_DIR/lib/firmware/bcm4319/
+sudo cp -av firmware/bcm4319/script/* $FILE_SYSTEM_TMP_DIR/etc/
+
+#Prepare build environment
+cd $WIFI_LOCAL_PATH
+rm -rf dhd-cdc-sdmmc-gpl*
+export ARCH=arm
+export CROSS_COMPILE=arm-none-linux-gnueabi-
+export LINUX_BUILD_DIR=$BUILD_TMP/$KERNEL_RELEASE_TAG/
+export LINUXDIR=$SOURCE_REPOSITORY_PATH/$KERNEL_REPOSITORY_NAME/
+make dhd-cdc-sdmmc-gpl
+#Update File System 
+cp -av dhd-cdc-sdmmc-gpl*/dhd.ko $FILE_SYSTEM_TMP_DIR/lib/modules/
+
+#Restore external tree
+if [ "$stash_clean" = "0" ] ; then	    
+  git stash pop
+fi
+
+# Pack file system
+sudo rm -rf $PACKAGE_PATH/$PACKAGE_IMAGE_DIR_FS_TAR
+cd $FILE_SYSTEM_TMP_DIR
+sudo tar -cjf $PACKAGE_PATH/$PACKAGE_IMAGE_DIR_FS_TAR .
+# Pack file system UBI
+sudo rm -rf $PACKAGE_PATH/$PACKAGE_IMAGE_DIR_FS_UBI
+sudo mkfs.ubifs --root=$FILE_SYSTEM_TMP_DIR --min-io-size=2048 --leb-size=126976 --max-leb-cnt=4094 --output=$TMP_FOLDER/$UBIFS_IMAGE_FILE
+cd $TMP_FOLDER
+sudo ubinize --output=$PACKAGE_PATH/$PACKAGE_IMAGE_DIR_FS_UBI --min-io-size=2048 --vid-hdr-offset=2048 --peb-size=128KiB $PACKAGE_PATH/$PACKAGE_UTIL_DIR_UBI_CONFIG
+sudo rm -rf $TMP_FOLDER/$UBIFS_IMAGE_FILE
+
+# Pack Final Package
+rm -rf $TMP_FOLDER/$RELEASE_PRODUCT_NAME
+cd $PACKAGE_PATH
+zip -9 -r $TMP_FOLDER/$RELEASE_PRODUCT_NAME ../${PACKAGE_PATH##*/}
+
+# Download current release
+ftp -inv $RELEASE_REPOSITORY<<ENDFTP
+user $RELEASE_REPOSITORY_USER $RELEASE_REPOSITORY_PASSWORD
+cd $RELEASE_PRODUCT_PATH
+bin
+mkdir $RELEASE_PRODUCT_VERSION
+cd $RELEASE_PRODUCT_VERSION
+lcd $TMP_FOLDER
+put $RELEASE_PRODUCT_NAME
+bye
+ENDFTP
+
+# Remove temp files
+sudo rm -rf $FILE_SYSTEM_TMP_DIR
+sudo rm -rf $PACKAGE_PATH
+sudo rm -rf $TMP_FOLDER/$UBIFS_IMAGE_FILE
+sudo rm -rf $TMP_FOLDER/$CURRENT_PRODUCT_NAME
+sudo rm -rf $TMP_FOLDER/$RELEASE_PRODUCT_NAME
+
+
+# Return
+cd $INITIAL_DIR
+exit 0
