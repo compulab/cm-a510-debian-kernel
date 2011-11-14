@@ -240,7 +240,13 @@ int    mvUsbBackVoltageUpdate(int dev, MV_U8 gppNo)
     int     vbusChange = 0;
     MV_U32  gppData, regVal;
 
-    gppData = gpio_get_value(gppNo);
+    if (gppNo != (MV_U8)N_A) {
+        gppData = gpio_get_value(gppNo);
+    }
+    else {
+        mvOsPrintf("VBUS GPIO pin is not configured - report as constantly connected \n");
+        gppData = 1;
+    }
     regVal = MV_REG_READ(MV_USB_PHY_POWER_CTRL_REG(dev));
 
     if(gppData != 0)
