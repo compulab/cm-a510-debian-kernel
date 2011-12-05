@@ -425,6 +425,22 @@ static struct fb_videomode video_modes[] = {
 	},
 #endif
 
+    [19] = {
+    .pixclock   = 0,
+    .refresh    = 65,
+    .xres       = 320,
+    .yres       = 240,
+
+    .right_margin   = 0,
+    .hsync_len      = 30,
+    .left_margin    = 0,
+
+    .lower_margin   = 0,
+    .vsync_len      = 5,
+    .upper_margin   = 0,
+    .sync           = 0
+    }
+
 };
 
 #ifdef CONFIG_FB_DOVE_CLCD1
