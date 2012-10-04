@@ -1,0 +1,57 @@
+#!/bin/bash
+
+ROOTFS=${HOME}/Work/nfsshare/cm_a510_root
+KERNEL_TARGET=${HOME}/Work/tftpboot/uImage
+
+
+make_wifi_driver()
+{
+	export LINUXDIR=`pwd`
+	export LINUX_BUILD_DIR=$KBUILD_OUTPUT
+
+	cd $1/bcm4329/src/dhd/linux
+	if [ $2 == "build" ]; then
+		echo "Build Wi-Fi driver"
+		make dhd-cdc-sdmmc-gpl-debug -j${num_jobs}
+		[[ $? == 0 ]] && cp `find . -name 'dhd.ko'` $INSTALL_MOD_PATH/lib/modules/.
+	elif [ $2 == "clean" ]; then
+		make clean
+	fi
+	cd -
+}
+
+
+export ARCH=arm
+export CROSS_COMPILE=${HOME}/Work/crosstools/arm-2009q3/bin/arm-none-linux-gnueabi-
+export KBUILD_OUTPUT=${HOME}/Work/nfsshare/cm_a510_root/tmp/linux-objects
+export INSTALL_MOD_PATH=$ROOTFS
+
+mkdir -p $KBUILD_OUTPUT
+num_jobs=$(expr `cat /proc/cpuinfo | grep processor | wc -l` \* 2)
+
+if [ $1 -a $1 == "build" ]; then
+	echo "Build Linux kernel"
+	make uImage -j${num_jobs}
+	[[ $? == 0 ]] && make modules -j${num_jobs}
+	[[ $? == 0 ]] && make modules_install
+	[[ $? == 0 ]] && cp `find $KBUILD_OUTPUT -name 'uImage'` $KERNEL_TARGET
+	[[ $? != 0 ]] && exit
+
+	if [ $2 -a $2 == "+wifi" ]; then
+		make_wifi_driver ../system-broadcom-wlan build
+	fi
+elif [ $1 -a $1 == "clean" ]; then
+	echo "Clean build (see if 'make mrproper' is needed)"
+	make clean
+	rm -rf $INSTALL_MOD_PATH/lib/modules/*
+
+	if [ $2 -a $2 == "+wifi" ]; then
+		make_wifi_driver ../system-broadcom-wlan clean
+	fi
+else
+	echo "make $@"
+	make $@
+fi
+
+exit 0
+
