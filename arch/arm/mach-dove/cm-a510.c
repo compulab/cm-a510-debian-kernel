@@ -772,6 +772,7 @@ static void __init cm_a510_init(void)
 	dove_spi1_init(1);
 	dove_uart0_init();
 	dove_uart1_init();
+	// dove_uart2_init();
 	dove_i2c_init();
 	dove_i2c_exp_init(0);
 	dove_i2c_exp_init(1);
@@ -791,7 +792,9 @@ static void __init cm_a510_init(void)
 
 	/*NOTE: On CM-A510 the TWSI bus 2 routed to MPP17,19 is refered by
 	        option 1 in MV64XX I2C expander driver*/
+#ifdef CONFIG_I2C_MV64XXX_PORT_EXPANDER
 	i2c_register_board_info(1, cm_a510_gpio_ext_info, 1);
+#endif
 
 	spi_register_board_info(cm_a510_spi_flash_info,
 				ARRAY_SIZE(cm_a510_spi_flash_info));

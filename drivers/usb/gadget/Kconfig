@@ -782,6 +782,8 @@ config USB_G_SERIAL
 	  which includes instructions and a "driver info file" needed to
 	  make MS-Windows work with CDC ACM.
 
+	  For the "Serial Gadget" to work, one should really select SWITCH.
+
 config USB_MIDI_GADGET
 	tristate "MIDI Gadget (EXPERIMENTAL)"
 	depends on SND && EXPERIMENTAL

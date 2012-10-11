@@ -449,8 +449,8 @@ mv64xxx_i2c_wait_for_completion(struct mv64xxx_i2c_data *drv_data)
 			drv_data->state = MV64XXX_I2C_STATE_IDLE;
 			dev_err(drv_data->dev,
 				"mv64xxx: I2C bus locked, block: %d, "
-				"time_left: %d\n", drv_data->block,
-				(int)time_left);
+				"time_left: %d  [I2C addr: %02X] \n", drv_data->block,
+				(int)time_left, drv_data->msg->addr);
 			mv64xxx_i2c_hw_init(drv_data);
 		}
 	} else
