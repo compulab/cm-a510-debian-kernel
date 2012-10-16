@@ -663,13 +663,17 @@ static int tlv320aic23_init(struct snd_soc_device *socdev)
 		return -ENOMEM;
 
 	/* Reset codec */
-	tlv320aic23_write(codec, TLV320AIC23_RESET, 0);
+	ret = tlv320aic23_write(codec, TLV320AIC23_RESET, 0);
+	if (ret < 0) {
+		printk(KERN_ERR"tlv320aic23: failed to reset codec. Is it present ? \n");
+		goto reset_or_pcm_err;
+	}
 
 	/* register pcms */
 	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
 	if (ret < 0) {
 		printk(KERN_ERR "tlv320aic23: failed to create pcms\n");
-		goto pcm_err;
+		goto reset_or_pcm_err;
 	}
 
 	/* power on device */
@@ -717,7 +721,8 @@ static int tlv320aic23_init(struct snd_soc_device *socdev)
 card_err:
 	snd_soc_free_pcms(socdev);
 	snd_soc_dapm_free(socdev);
-pcm_err:
+
+reset_or_pcm_err:
 	kfree(codec->reg_cache);
 	return ret;
 }
@@ -743,14 +748,9 @@ static int tlv320aic23_codec_probe(struct i2c_client *i2c,
 
 	ret = tlv320aic23_init(socdev);
 	if (ret < 0) {
-		printk(KERN_ERR "tlv320aic23: failed to initialise AIC23\n");
-		goto err;
+		printk(KERN_ERR "tlv320aic23: failed to initialize AIC23\n");
+		kfree(container_of(codec, struct aic23, codec));
 	}
-	return ret;
-
-err:
-	kfree(codec);
-	kfree(i2c);
 	return ret;
 }
 static int __exit tlv320aic23_i2c_remove(struct i2c_client *i2c)

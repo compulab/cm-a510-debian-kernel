@@ -294,8 +294,9 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
 
 	klist_iter_init_node(&bus->p->klist_devices, &i,
 			     (start ? &start->p->knode_bus : NULL));
-	while ((dev = next_device(&i)) && !error)
+	while ((dev = next_device(&i)) && !error) {
 		error = fn(dev, data);
+	}
 	klist_iter_exit(&i);
 	return error;
 }
@@ -703,9 +704,10 @@ int bus_add_driver(struct device_driver *drv)
 	return 0;
 
 out_unregister:
+	kobject_put(&priv->kobj);
 	kfree(drv->p);
 	drv->p = NULL;
-	kobject_put(&priv->kobj);
+
 out_put_bus:
 	bus_put(bus);
 	return error;
