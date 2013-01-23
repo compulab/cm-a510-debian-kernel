@@ -424,23 +424,41 @@ static struct fb_videomode video_modes[] = {
 	.sync		= 0,
 	},
 #endif
+#if 0
+/* Support issue 4173: DoveFB support for low resolution TFT displays */
+    [19] = {				/* 320x240@65 */
+    .pixclock		= 0,
+    .refresh		= 65,
+    .xres		= 320,
+    .yres		= 240,
 
-    [19] = {
-    .pixclock   = 0,
-    .refresh    = 65,
-    .xres       = 320,
-    .yres       = 240,
+    .right_margin	= 0,
+    .hsync_len		= 30,
+    .left_margin	= 0,
 
-    .right_margin   = 0,
-    .hsync_len      = 30,
-    .left_margin    = 0,
+    .lower_margin	= 0,
+    .vsync_len		= 5,
+    .upper_margin	= 0,
+    .sync		= 0
+    },
+#elif 1
+/* Support issue 5335: LCD compatibility */
+    [19] = {				/* 320x240@65 */
+    .pixclock		= 0,
+    .refresh		= 65,
+    .xres		= 320,
+    .yres		= 240,
 
-    .lower_margin   = 0,
-    .vsync_len      = 5,
-    .upper_margin   = 0,
-    .sync           = 0
+    .right_margin	= 20,
+    .hsync_len		= 30,
+    .left_margin	= 38,
+
+    .lower_margin	= 4,
+    .vsync_len		= 3,
+    .upper_margin	= 15,
+    .sync		= 0
     }
-
+#endif
 };
 
 #ifdef CONFIG_FB_DOVE_CLCD1
