@@ -2,6 +2,7 @@
 
 ROOTFS=${HOME}/Work/nfsshare/cm_a510_root
 KERNEL_TARGET=${HOME}/Work/tftpboot/uImage
+defconfig_file="cm_a510_defconfig"
 
 
 make_wifi_driver()
@@ -23,6 +24,7 @@ make_wifi_driver()
 
 export ARCH=arm
 export CROSS_COMPILE=${HOME}/Work/crosstools/arm-2009q3/bin/arm-none-linux-gnueabi-
+# export CROSS_COMPILE=${HOME}/Work/crosstools/arm-2013.05/bin/arm-none-linux-gnueabi-
 export KBUILD_OUTPUT=${HOME}/Work/nfsshare/cm_a510_root/tmp/linux-objects
 export INSTALL_MOD_PATH=$ROOTFS
 
@@ -48,6 +50,12 @@ elif [ $1 -a $1 == "clean" ]; then
 	if [ $2 -a $2 == "+wifi" ]; then
 		make_wifi_driver ../system-broadcom-wlan clean
 	fi
+elif [ $1 -a $1 == "replay" ]; then
+	echo "Replay ..."
+	make clean
+	rm -rf $INSTALL_MOD_PATH/lib/modules/*
+	make mrproper
+	make ${defconfig_file}
 else
 	echo "make $@"
 	make $@
